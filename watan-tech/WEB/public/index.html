@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>وطن تِك | منصة الاقتراحات والشكاوى</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <img src="assets/logo.png" alt="شعار وطن تِك">
+  <h1>وطن تِك</h1>
+</header>
+<main>
+  <section class="card">
+    <h2>أهلًا بكم في منصة وطن تِك للاقتراحات والشكاوى</h2>
+    <p>نرحب بكم في منصتنا المخصصة لاستقبال اقتراحاتكم وشكاواكم وملاحظاتكم، إيمانًا منا بأهمية آرائكم ودورها في التطوير والتحسين المستمر لأعمال الفريق. نسعد بمشاركتكم، ونسعى إلى الاستفادة من ملاحظاتكم بما يسهم في تحقيق الأفضل.</p>
+  </section>
+  <section class="card">
+    <form id="f" novalidate>
+      <label for="name">الاسم الكامل</label>
+      <input id="name" required minlength="2" maxlength="100" autocomplete="name">
+      <label for="email">البريد الإلكتروني الفعّال</label>
+      <input id="email" type="email" required maxlength="150" autocomplete="email" dir="ltr">
+      <label for="phone">رقم الهاتف</label>
+      <input id="phone" type="tel" required minlength="6" maxlength="20" autocomplete="tel" dir="ltr">
+      <label for="type">نوع الرسالة</label>
+      <select id="type" required>
+        <option value="">اختر...</option>
+        <option>اقتراح</option><option>شكوى</option><option>ملاحظة</option><option>استفسار</option><option>أخرى</option>
+      </select>
+      <label for="message">نص الرسالة</label>
+      <textarea id="message" required minlength="5" maxlength="3000"></textarea>
+      <input class="hp" id="website" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <button id="btn" type="submit">إرسال</button>
+      <div id="status" class="msg" role="status"></div>
+    </form>
+  </section>
+</main>
+<footer>© وطن تِك – WATAN TECH</footer>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getFirestore,collection,addDoc,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {firebaseConfig} from "./firebase-config.js";
+const db=getFirestore(initializeApp(firebaseConfig));
+const $=id=>document.getElementById(id), st=$('status'), btn=$('btn');
+function show(t,c){st.textContent=t;st.className='msg '+c}
+$('f').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if($('website').value) return; // فخ للروبوتات
+  if(!$('f').checkValidity()){$('f').reportValidity();return}
+  if(Date.now()-(+localStorage.wt_last||0)<30000){show('يرجى الانتظار قليلًا قبل إرسال رسالة أخرى.','err');return}
+  btn.disabled=true;
+  try{
+    await addDoc(collection(db,'messages'),{
+      name:$('name').value.trim(),email:$('email').value.trim(),phone:$('phone').value.trim(),
+      type:$('type').value,message:$('message').value.trim(),createdAt:serverTimestamp(),status:'new'});
+    localStorage.wt_last=Date.now();
+    $('f').reset();show('تم إرسال رسالتكم بنجاح. شكرًا لمشاركتكم!','ok');
+  }catch(err){console.error(err);show('تعذّر الإرسال، يرجى المحاولة لاحقًا.','err')}
+  btn.disabled=false;
+});
+</script>
+</body>
+</html>

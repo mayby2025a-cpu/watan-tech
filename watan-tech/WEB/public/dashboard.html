@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>الرسائل | لوحة تحكم وطن تِك</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+header{position:relative}
+.reg{position:absolute;top:14px;inset-inline-start:14px;background:var(--accent);color:var(--primary);text-decoration:none;font-weight:700;padding:9px 18px;border-radius:10px}
+.reg:hover{opacity:.85}
+.mcard{border-inline-start:5px solid #cfd6d2}
+.mcard.new{border-inline-start-color:var(--accent);background:#fffdf3}
+.mhead{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;align-items:center}
+.tag{background:var(--primary);color:#fff;border-radius:20px;padding:2px 14px;font-size:.85rem}
+.data{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:6px 16px;margin:12px 0;font-size:.95rem}
+.data b{color:var(--primary)}
+.mcard p{white-space:pre-wrap;background:var(--bg);padding:12px;border-radius:10px;margin:8px 0}
+.acts{display:flex;gap:10px;flex-wrap:wrap}
+.acts button{width:auto;margin:0;padding:8px 16px;font-size:.9rem}
+</style>
+</head>
+<body>
+<header>
+  <img src="assets/logo.png" alt="شعار وطن تِك"><h1>لوحة التحكم</h1>
+</header>
+<div class="wrap">
+  <section id="app" style="display:none">
+    <div class="card bar">
+      <div>الرسائل: <span class="badge" id="cnt">0</span> &nbsp; الجديدة: <span class="badge" id="newc">0</span></div>
+      <div class="bar">
+        <select id="ft"><option value="">كل الأنواع</option><option>اقتراح</option><option>شكوى</option><option>ملاحظة</option><option>استفسار</option><option>أخرى</option></select>
+        <select id="fs"><option value="">كل الحالات</option><option value="new">جديدة</option><option value="read">مقروءة</option></select>
+        <button id="out">خروج</button>
+      </div>
+    </div>
+    <div id="list"></div>
+  </section>
+</div>
+
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,collection,query,orderBy,onSnapshot,doc,getDoc,updateDoc,deleteDoc} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {firebaseConfig,ownerUid} from "./firebase-config.js";
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const $=id=>document.getElementById(id);
+let all=[],unsub=null;
+const fmt=d=>d?d.toDate().toLocaleString('ar-SA',{dateStyle:'medium',timeStyle:'short'}):'...';
+const lerr=t=>{const e=$('lerr');e.textContent=t;e.className='msg err'};
+function el(tag,cls,txt){const e=document.createElement(tag);if(cls)e.className=cls;if(txt!==undefined)e.textContent=txt;return e}
+
+$('out').onclick=()=>signOut(auth);
+
+onAuthStateChanged(auth,async u=>{
+  if(unsub){unsub();unsub=null}
+  if(!u){location.replace('admin.html');return}
+  let ok=u.uid===ownerUid;
+  if(!ok){try{ok=(await getDoc(doc(db,'admins',u.uid))).exists()}catch{ok=false}}
+  if(!ok){await signOut(auth);return}
+  $('app').style.display='block';
+  unsub=onSnapshot(query(collection(db,'messages'),orderBy('createdAt','desc')),
+    s=>{all=s.docs.map(d=>({id:d.id,...d.data()}));render()},
+    err=>{$('list').textContent='تعذّر تحميل الرسائل: '+err.code});
+});
+
+function field(label,val,ltr){
+  const d=el('div');d.append(el('b','',label+': '));
+  const s=el('span','',val);if(ltr)s.dir='ltr';d.append(s);return d;
+}
+function render(){
+  const t=$('ft').value,s=$('fs').value;
+  $('cnt').textContent=all.length;$('newc').textContent=all.filter(m=>m.status==='new').length;
+  const box=$('list');box.textContent='';
+  const rows=all.filter(m=>(!t||m.type===t)&&(!s||m.status===s));
+  if(!rows.length){box.append(el('div','card','لا توجد رسائل.'));return}
+  rows.forEach(m=>{
+    const c=el('div','card mcard'+(m.status==='new'?' new':''));
+    const head=el('div','mhead');
+    head.append(el('span','tag',m.type),el('span','meta',fmt(m.createdAt)+(m.status==='new'?' — جديدة':'')));
+    const data=el('div','data');
+    data.append(field('الاسم الكامل',m.name),field('البريد الإلكتروني',m.email,true),field('رقم الهاتف',m.phone,true));
+    const acts=el('div','acts');
+    const r=el('button','',m.status==='new'?'تعليم كمقروءة':'تعليم كجديدة');
+    r.onclick=()=>updateDoc(doc(db,'messages',m.id),{status:m.status==='new'?'read':'new'});
+    const x=el('button','danger','حذف');
+    x.onclick=()=>{if(confirm('حذف هذه الرسالة نهائيًا؟'))deleteDoc(doc(db,'messages',m.id))};
+    acts.append(r,x);
+    c.append(head,data,el('p','',m.message),acts);box.append(c);
+  });
+}
+$('ft').onchange=$('fs').onchange=render;
+</script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>تسجيل حساب جديد | وطن تِك</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header><img src="assets/logo.png" alt="شعار وطن تِك"><h1>تسجيل حساب جديد</h1></header>
+<main>
+  <section class="card">
+    <form id="f" novalidate>
+      <label for="code">كود التسجيل</label>
+      <input id="code" required dir="ltr" autocomplete="off" style="text-transform:uppercase">
+      <label for="email">البريد الإلكتروني</label>
+      <input id="email" type="email" required dir="ltr" autocomplete="email">
+      <label for="pw">كلمة المرور (6 أحرف على الأقل)</label>
+      <input id="pw" type="password" required minlength="6" dir="ltr" autocomplete="new-password">
+      <label for="pw2">تأكيد كلمة المرور</label>
+      <input id="pw2" type="password" required minlength="6" dir="ltr" autocomplete="new-password">
+      <button id="btn" type="submit">إنشاء الحساب</button>
+      <div id="status" class="msg" role="status"></div>
+    </form>
+  </section>
+</main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,createUserWithEmailAndPassword,deleteUser} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,doc,writeBatch,serverTimestamp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {firebaseConfig} from "./firebase-config.js";
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const $=id=>document.getElementById(id),st=$('status'),btn=$('btn');
+const show=(t,c)=>{st.textContent=t;st.className='msg '+c};
+const q=new URLSearchParams(location.search).get('code');if(q)$('code').value=q;
+$('f').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!$('f').checkValidity()){$('f').reportValidity();return}
+  if($('pw').value!==$('pw2').value){show('كلمتا المرور غير متطابقتين.','err');return}
+  const code=$('code').value.trim().toUpperCase(),email=$('email').value.trim();
+  if(!/^[A-Z0-9]{8,32}$/.test(code)){show('صيغة الكود غير صحيحة.','err');return}
+  btn.disabled=true;let user=null;
+  try{
+    user=(await createUserWithEmailAndPassword(auth,email,$('pw').value)).user;
+    const b=writeBatch(db);
+    b.update(doc(db,'invites',code),{used:true,usedBy:user.uid,usedAt:serverTimestamp()});
+    b.set(doc(db,'admins',user.uid),{email,code,createdAt:serverTimestamp()});
+    await b.commit();
+    show('تم إنشاء الحساب بنجاح. جارٍ التحويل للوحة التحكم...','ok');
+    setTimeout(()=>location.href='dashboard.html',1500);
+  }catch(err){
+    console.error(err);
+    if(user&&err.code&&err.code.startsWith('auth/')===false){try{await deleteUser(user)}catch{}}
+    const m={'auth/email-already-in-use':'هذا البريد مسجّل مسبقًا.','auth/weak-password':'كلمة المرور ضعيفة.','auth/invalid-email':'البريد الإلكتروني غير صحيح.'}[err.code];
+    show(m||'الكود غير صالح أو مستخدم أو منتهي الصلاحية.','err');
+    btn.disabled=false;
+  }
+});
+</script>
+</body>
+</html>

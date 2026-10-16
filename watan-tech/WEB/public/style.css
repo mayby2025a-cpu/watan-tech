@@ -1,0 +1,37 @@
+/* غيّر هذه الألوان لتطابق ألوان اللوغو الرسمي فقط */
+:root{--primary:#0b3d2e;--accent:#c9a227;--bg:#f6f7f5;--card:#fff;--text:#1b2420;--muted:#5d6b64;--danger:#b3261e;--radius:14px}
+*{box-sizing:border-box}
+body{margin:0;font-family:'Cairo','Segoe UI',Tahoma,sans-serif;background:var(--bg);color:var(--text);line-height:1.8}
+header{background:var(--primary);color:#fff;text-align:center;padding:28px 16px}
+header img{width:110px;height:110px;object-fit:contain;background:#fff;border-radius:50%;padding:6px}
+header h1{margin:8px 0 0;color:var(--accent);font-size:1.8rem}
+main{max-width:720px;margin:-20px auto 40px;padding:0 16px}
+.card{background:var(--card);border-radius:var(--radius);padding:24px;box-shadow:0 4px 18px #0001;margin-bottom:18px}
+.card h2{color:var(--primary);margin-top:0}
+label{display:block;font-weight:600;margin:14px 0 4px}
+input,select,textarea,button{font:inherit;width:100%;padding:11px 12px;border:1.5px solid #cfd6d2;border-radius:10px;background:#fff}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{min-height:140px;resize:vertical}
+button{background:var(--primary);color:#fff;border:0;cursor:pointer;font-weight:700;margin-top:18px}
+button:hover{background:var(--accent);color:var(--primary)}
+button:disabled{opacity:.6;cursor:wait}
+.hp{position:absolute;left:-9999px;opacity:0}
+.msg{padding:12px;border-radius:10px;margin-top:14px;display:none}
+.msg.ok{display:block;background:#e6f4ea;color:#14532d}
+.msg.err{display:block;background:#fdecea;color:var(--danger)}
+footer{text-align:center;color:var(--muted);padding:20px;font-size:.9rem}
+/* لوحة التحكم */
+.wrap{max-width:1000px;margin:20px auto;padding:0 16px}
+.bar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;justify-content:space-between}
+.bar select{width:auto}.bar button{width:auto;margin:0;padding:9px 16px}
+.item{display:flex;gap:12px;justify-content:space-between;align-items:center;cursor:pointer;border-inline-start:5px solid #cfd6d2}
+.item.new{border-inline-start-color:var(--accent);background:#fffdf3}
+.badge{background:var(--accent);color:var(--primary);border-radius:20px;padding:2px 12px;font-size:.85rem;font-weight:700}
+.meta{color:var(--muted);font-size:.88rem}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:center;justify-content:center;padding:16px}
+.modal.open{display:flex}
+.modal .card{max-width:600px;width:100%;max-height:90vh;overflow:auto;margin:0}
+.modal p{white-space:pre-wrap;background:var(--bg);padding:12px;border-radius:10px}
+.row{display:flex;gap:10px;flex-wrap:wrap}.row button{flex:1;min-width:110px}
+.danger{background:var(--danger)}
+@media(max-width:560px){.item{flex-direction:column;align-items:flex-start}}

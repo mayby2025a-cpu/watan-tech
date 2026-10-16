@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>تسجيل الدخول | وطن تِك</title>
+<link rel="icon" href="assets/logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<style>
+.reg{display:block;text-align:center;text-decoration:none;background:var(--accent);color:var(--primary);font-weight:700;padding:11px;border-radius:10px;margin-bottom:18px}
+.reg:hover{opacity:.85}
+</style>
+</head>
+<body>
+<header><img src="assets/logo.png" alt="شعار وطن تِك"><h1>وطن تِك</h1></header>
+<main>
+  <section class="card">
+    <a class="reg" href="register.html">تسجيل حساب جديد</a>
+    <h2>تسجيل الدخول</h2>
+    <form id="f" novalidate>
+      <label for="em">البريد الإلكتروني</label>
+      <input id="em" type="email" required dir="ltr" autocomplete="username">
+      <label for="pw">كلمة المرور</label>
+      <input id="pw" type="password" required dir="ltr" autocomplete="current-password">
+      <button id="btn" type="submit">دخول</button>
+      <div id="status" class="msg" role="status"></div>
+    </form>
+  </section>
+</main>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,signInWithEmailAndPassword,signOut,onAuthStateChanged} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,doc,getDoc} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+import {firebaseConfig,ownerUid} from "./firebase-config.js";
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+const $=id=>document.getElementById(id),st=$('status'),btn=$('btn');
+const show=t=>{st.textContent=t;st.className='msg err'};
+async function isAdmin(u){
+  if(u.uid===ownerUid)return true;
+  try{return (await getDoc(doc(db,'admins',u.uid))).exists()}catch{return false}
+}
+// إن كان مسجّل دخول مسبقًا وله صلاحية، انتقل للوحة الرسائل
+onAuthStateChanged(auth,async u=>{
+  if(u&&await isAdmin(u))location.replace('dashboard.html');
+});
+$('f').addEventListener('submit',async e=>{
+  e.preventDefault();
+  if(!$('f').checkValidity()){$('f').reportValidity();return}
+  btn.disabled=true;
+  try{
+    const u=(await signInWithEmailAndPassword(auth,$('em').value.trim(),$('pw').value)).user;
+    if(await isAdmin(u)){location.replace('dashboard.html');return}
+    await signOut(auth);show('هذا الحساب لا يملك صلاحية الإدارة.');
+  }catch{show('بيانات الدخول غير صحيحة.')}
+  btn.disabled=false;
+});
+</script>
+</body>
+</html>
